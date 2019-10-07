@@ -1,0 +1,26 @@
+version: "3.3"
+services:
+
+  # Define api service and envoy sidecar proxy for version 2 of the service
+  api_v2:
+    build:
+      context: ./consul-l7-api-v2
+      dockerfile: Dockerfile
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.5
+  api_proxy_v2:
+    image: nicholasjackson/consul-envoy:v1.6.1-v0.10.0
+    environment:
+      CONSUL_HTTP_ADDR: 10.5.0.2:8500
+      CONSUL_GRPC_ADDR: 10.5.0.2:8502
+      SERVICE_CONFIG: /config/sidecar-for-greetings-api-v2.json
+    volumes:
+      - "./consul.d:/config"
+    command: ["consul", "connect", "envoy","-sidecar-for", "greetings-api-v2"]
+    network_mode: "service:api_v2"
+
+networks:
+  vpcbr:
+    external:
+      name: consul-l7-splitting_vpcbr
